@@ -15,33 +15,37 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteAllService = void 0;
 const CierreDiarioModels_1 = __importDefault(require("../models/CierreDiarioModels"));
 const deleteAllService = (empresas_id, jornadaInicial, jonadaFinal) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     let borradas = [];
     const detalladoCierre = yield CierreDiarioModels_1.default.aggregate().match({ empresas_id: empresas_id, jornada_id: { $gte: jornadaInicial, $lte: jonadaFinal } });
+    let ventasDuplicadas = [];
+    let unicas = {};
     for (const detalladoItem of detalladoCierre) {
-        let parar = false;
-        for (const item of detalladoItem.data.ventas_combustible) {
-            if (parar)
-                break;
-            const detalladoCierre = yield CierreDiarioModels_1.default.aggregate()
-                .match({ empresas_id: empresas_id, "data.ventas_combustible.consecutivo": item.consecutivo });
-            if (detalladoCierre.length > 1) {
-                console.log(detalladoCierre);
-                parar = true;
-                let index = 0;
-                for (const detalladoItem of detalladoCierre) {
-                    if (index === 0)
-                        return;
-                    const res = yield CierreDiarioModels_1.default.findByIdAndDelete(detalladoItem._id);
-                    borradas.push({ res });
-                    index = index + 1;
-                }
-            }
-            else {
-                parar = true;
-            }
-        }
+        let consecutivoOriginal = ((_a = detalladoItem.data.ventas_combustible[0]) === null || _a === void 0 ? void 0 : _a.consecutivo) || 'undefined';
+        ventasDuplicadas = detalladoCierre.filter((item) => {
+            var _a, _b;
+            const consecutivoActual = (_b = (_a = item.data.ventas_combustible[0]) === null || _a === void 0 ? void 0 : _a.consecutivo) !== null && _b !== void 0 ? _b : 'undefined';
+            /*  console.log({
+                 consecutivoOriginal,
+                 consecutivoActual,
+                 validacion:consecutivoActual === consecutivoOriginal
+             }) */
+            return consecutivoActual === consecutivoOriginal;
+        });
     }
-    return borradas;
+    console.log(ventasDuplicadas);
+    if (ventasDuplicadas.length > 1) {
+        ventasDuplicadas.forEach((detalladoItem, index) => {
+            var _a, _b;
+            if (!unicas[(_a = detalladoItem.data.ventas_combustible[0]) === null || _a === void 0 ? void 0 : _a.consecutivo]) {
+                unicas[(_b = detalladoItem.data.ventas_combustible[0]) === null || _b === void 0 ? void 0 : _b.consecutivo] = true;
+                return;
+            }
+            borradas.push(CierreDiarioModels_1.default.findByIdAndDelete(detalladoItem._id));
+        });
+    }
+    const respuesta = yield Promise.all(borradas);
+    return respuesta;
 });
 exports.deleteAllService = deleteAllService;
 //# sourceMappingURL=DeleteServices.js.map
