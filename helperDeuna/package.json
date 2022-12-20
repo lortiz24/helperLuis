@@ -5,7 +5,8 @@
   "main": "ByEmpresa.js",
   "dependencies": {
     "excel4node": "^1.8.0",
-    "fs": "0.0.1-security"
+    "fs": "0.0.1-security",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {},
   "scripts": {
